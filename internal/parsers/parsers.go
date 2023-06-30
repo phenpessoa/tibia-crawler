@@ -5,6 +5,7 @@ package parsers
 import (
 	"context"
 	"net/http"
+	"os"
 )
 
 // Parser defines an interface for parsing content from a specific tibia.com
@@ -16,6 +17,9 @@ import (
 //
 // Each parser implementation is specific to a particular type of content on
 // tibia.com, such as characters, worlds, etc.
+//
+// Every implementation for Parser MUST use the BaseURL global variable of this
+// package when building the URL to make the request to tibia.com.
 type Parser[A, P any] interface {
 	// Parse parses the HTML content from a tibia.com page and returns the
 	// parsed data.
@@ -57,4 +61,30 @@ type Options struct {
 	// If no HTTP client is provided, the parser falls back to
 	// the default HTTP client.
 	HTTPClient *http.Client
+}
+
+var (
+	// BaseURL is the base URL for accessing tibia.com.
+	//
+	// The `BaseURL` global variable holds the base URL for making requests to
+	// tibia.com. By default, it is set to https://www.tibia.com/. However, the
+	// user can override this value by setting the `TIBIA_CRAWLER_BASE_URL`
+	// environment variable to a custom URL.
+	//
+	// This feature allows the user to configure a custom base URL, so that,
+	// for example, a proxy can be used to access tibia.com, instead of calling
+	// it directly.
+	BaseURL = getBaseURL()
+)
+
+var _baseURL = "https://www.tibia.com/"
+
+func init() {
+	if baseURL := os.Getenv("TIBIA_CRAWLER_BASE_URL"); baseURL != "" {
+		_baseURL = baseURL
+	}
+}
+
+func getBaseURL() string {
+	return _baseURL
 }
