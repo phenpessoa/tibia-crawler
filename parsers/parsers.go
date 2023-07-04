@@ -70,7 +70,7 @@ type Options struct {
 
 	// DisallowCachedResponses specifies whether the parser should disallow
 	// returning cached responses.
-	DisallowCachedResponse bool
+	DisallowCachedResponses bool
 }
 
 var (
