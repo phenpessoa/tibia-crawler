@@ -20,6 +20,12 @@ import (
 //
 // Every implementation for Parser MUST use the BaseURL global variable of this
 // package when building the URL to make the request to tibia.com.
+//
+// Implementations of the Parser interface are free to cache the response from
+// previous parsing operations and return cached responses if they are
+// available. However, if the caller sets the DisallowCachedResponses option to
+// true, the implementation MUST take this into consideration and not return
+// cached responses.
 type Parser[A, P any] interface {
 	// Parse parses the HTML content from a tibia.com page and returns the
 	// parsed data.
@@ -61,6 +67,10 @@ type Options struct {
 	// If no HTTP client is provided, the parser falls back to
 	// the default HTTP client.
 	HTTPClient *http.Client
+
+	// DisallowCachedResponses specifies whether the parser should disallow
+	// returning cached responses.
+	DisallowCachedResponse bool
 }
 
 var (
