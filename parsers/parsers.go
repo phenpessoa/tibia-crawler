@@ -84,6 +84,12 @@ type Options struct {
 	// If no RateLimiter is specified, parsers will not wait before making a
 	// request to tibia.com
 	RateLimiter ratelimit.Limiter
+
+	// Retries is the amount of time the parser is allowed to retry in case of
+	// an error before giving up the request.
+	//
+	// If Retries is set to 0 or 1, only 1 attempt will be made.
+	Retries uint8
 }
 
 // DefaultRateLimiter is a ratelimiter that is known not to be restricted by
@@ -105,6 +111,11 @@ var (
 	// for example, a proxy can be used to access tibia.com, instead of calling
 	// it directly.
 	BaseURL = "https://www.tibia.com/"
+)
+
+const (
+	// MaintenanceHost is tibia.com maintenance host.
+	MaintenanceHost = "maintenance.tibia.com"
 )
 
 func init() {

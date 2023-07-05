@@ -11,6 +11,7 @@
 package boostablebosses
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -18,7 +19,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/phenpessoa/tibia-crawler/parsers"
 	"github.com/phenpessoa/tibia-crawler/tibia"
@@ -117,19 +117,50 @@ func (p *Parser) fetch(
 	args Args,
 	opts parsers.Options,
 ) error {
-	select {
-	case <-ctx.Done():
-		return parsers.ErrCtxDone
-	default:
-	}
-
 	if opts.HTTPClient == nil {
 		opts.HTTPClient = http.DefaultClient
 	}
 
+	if opts.Retries == 0 {
+		opts.Retries = 1
+	}
+
+	var (
+		data string
+		err  error
+	)
+	for i := 0; i < int(opts.Retries); i++ {
+		data, err = p.makeRequest(ctx, args, opts)
+		if err == nil {
+			break
+		}
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if err := p.parse(data); err != nil {
+		return fmt.Errorf("boostable bosses: failed to parse body: %w", err)
+	}
+
+	return nil
+}
+
+func (p *Parser) makeRequest(
+	ctx context.Context,
+	args Args,
+	opts parsers.Options,
+) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", parsers.ErrCtxDone
+	default:
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.URL(), nil)
 	if err != nil {
-		return fmt.Errorf("boostable bosses: failed to create req: %w", err)
+		return "", fmt.Errorf("boostable bosses: failed to create req: %w", err)
 	}
 
 	if opts.RateLimiter != nil {
@@ -138,22 +169,46 @@ func (p *Parser) fetch(
 
 	res, err := opts.HTTPClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("boostable bosses: failed to make req: %w", err)
+		return "", fmt.Errorf("boostable bosses: failed to make req: %w", err)
 	}
 	defer res.Body.Close()
-
 	defer io.Copy(io.Discard, res.Body)
-	buf := make([]byte, contentLength)
-	if _, err := io.ReadAtLeast(res.Body, buf, 1); err != nil {
-		return fmt.Errorf("boostable bosses: failed to read body: %w", err)
+
+	switch res.StatusCode {
+	case http.StatusOK:
+		// continue
+	case http.StatusForbidden:
+		return "", fmt.Errorf(
+			"boostable bosses: request forbidden by cip: %w",
+			parsers.ErrRateLimited,
+		)
+	case http.StatusFound:
+		loc, err := res.Location()
+		if err != nil {
+			return "", fmt.Errorf(
+				"boostable bosses: failed to get location from response",
+			)
+		}
+
+		if loc.Host == parsers.MaintenanceHost {
+			return "", parsers.ErrMaintenance
+		}
+
+		fallthrough
+	default:
+		return "", fmt.Errorf(
+			"boostable bosses: code %d: %w",
+			res.StatusCode, parsers.ErrUnknownStatusCode,
+		)
 	}
 
-	data := unsafe.String(unsafe.SliceData(buf), len(buf))
-	if err := p.parse(data); err != nil {
-		return fmt.Errorf("boostable bosses: failed to parse body: %w", err)
+	var buf bytes.Buffer
+	buf.Grow(contentLength)
+	if _, err := io.Copy(&buf, res.Body); err != nil {
+		return "", fmt.Errorf("boostable bosses: failed to read body: %w", err)
 	}
 
-	return nil
+	return buf.String(), nil
 }
 
 const (
