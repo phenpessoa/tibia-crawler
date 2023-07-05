@@ -172,7 +172,7 @@ func (p *Parser) makeRequest(
 		return "", fmt.Errorf("boostable bosses: failed to make req: %w", err)
 	}
 	defer res.Body.Close()
-	defer io.Copy(io.Discard, res.Body)
+	defer discard(res.Body)
 
 	switch res.StatusCode {
 	case http.StatusOK:
@@ -422,4 +422,8 @@ func (p *Parser) store(bosses tibia.BoostableBosses) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.cachedBosses = bosses
+}
+
+func discard(src io.Reader) {
+	_, _ = io.Copy(io.Discard, src)
 }
