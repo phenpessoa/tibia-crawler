@@ -137,6 +137,10 @@ func (p *Parser) fetch(
 		return fmt.Errorf("boostable bosses: failed to create req: %w", err)
 	}
 
+	if opts.RateLimiter != nil {
+		opts.RateLimiter.Take()
+	}
+
 	res, err := opts.HTTPClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("boostable bosses: failed to make req: %w", err)
