@@ -233,35 +233,14 @@ const (
 )
 
 func (p *Parser) parse(data string) error {
-	startIdx := strings.Index(
-		data, startIndexer,
-	)
-	if startIdx == -1 {
-		return fmt.Errorf("boostable bosses: main content not found")
-	}
-
-	endIdx := strings.Index(
-		data[startIdx:], endIndexer,
-	) + startIdx
-	if endIdx == -1 {
-		return fmt.Errorf("boostable bosses: end of content not found")
-	}
-
-	data = data[startIdx:endIdx]
-
-	lines := strings.Split(data, "\n")
-	if len(lines) == 0 {
-		return fmt.Errorf("boostable bosses: no lines found")
+	lines, err := p.getLines(data)
+	if err != nil {
+		return err
 	}
 
 	var (
 		parsed  tibia.BoostableBosses
 		started bool
-	)
-
-	parsed.Boosted.IsBoosted = true
-	parsed.Bosses = make(
-		[]tibia.BoostableBoss, 0, tibia.AmountOfBoostableBosses,
 	)
 
 	for _, line := range lines {
@@ -274,112 +253,163 @@ func (p *Parser) parse(data string) error {
 
 		if isTodaysLine {
 			started = true
-
-			todayBossIdx := strings.Index(
-				line, todayBossIndexer,
-			) + len(todayBossIndexer)
-
-			if todayBossIdx == -1 {
-				return fmt.Errorf("boostable bosses: today boss idx not found")
+			boss, err := p.readTodaysLine(line)
+			if err != nil {
+				return err
 			}
-
-			endTodayBossIdx := strings.Index(
-				line[todayBossIdx:], endTodayBossIndexer,
-			) + todayBossIdx
-
-			if endTodayBossIdx == -1 {
-				return fmt.Errorf(
-					"boostable bosses: today boss end idx not found",
-				)
-			}
-
-			parsed.Boosted.Name = line[todayBossIdx:endTodayBossIdx]
-
-			todayBossImgIdx := strings.Index(
-				line[todayBossIdx:], todayBossImgIndexer,
-			) + todayBossIdx
-
-			if todayBossImgIdx == -1 {
-				return fmt.Errorf(
-					"boostable bosses: today boss img idx not found",
-				)
-			}
-
-			endTodayBossImgIdx := strings.Index(
-				line[todayBossImgIdx:], endTodayBossImgIndexer,
-			) + todayBossImgIdx
-
-			if endTodayBossImgIdx == -1 {
-				return fmt.Errorf(
-					"boostable bosses: today boss end img idx not found",
-				)
-			}
-
-			parsed.Boosted.ImageURL = line[todayBossImgIdx:endTodayBossImgIdx]
+			parsed.Boosted = boss
 		}
 
 		if isBossesLine {
-			idx := strings.Index(line, bossesImgIndexer)
-			for ; idx != -1; idx = strings.Index(line, bossesImgIndexer) {
-				imgIdx := strings.Index(
-					line, bossesImgIndexer,
-				)
-
-				if imgIdx == -1 {
-					return fmt.Errorf(
-						"boostable bosses: img idx not found",
-					)
-				}
-
-				endImgIdx := strings.Index(
-					line[imgIdx:], endBossesImgIndexer,
-				) + imgIdx
-
-				if endImgIdx == -1 {
-					return fmt.Errorf(
-						"boostable bosses: end img idx not found",
-					)
-				}
-
-				img := line[imgIdx:endImgIdx]
-
-				nameIdx := strings.Index(
-					line, bossesNameIndexer,
-				) + len(bossesNameIndexer)
-
-				if nameIdx == -1 {
-					return fmt.Errorf(
-						"boostable bosses: name idx not found",
-					)
-				}
-
-				endNameIdx := strings.Index(
-					line[nameIdx:], endBossesNameIndexer,
-				) + nameIdx
-
-				if endNameIdx == -1 {
-					return fmt.Errorf(
-						"boostable bosses: end name idx not found",
-					)
-				}
-
-				name := line[nameIdx:endNameIdx]
-
-				parsed.Bosses = append(parsed.Bosses, tibia.BoostableBoss{
-					Name:      name,
-					ImageURL:  img,
-					IsBoosted: name == parsed.Boosted.Name,
-				})
-
-				line = line[endNameIdx-1:]
+			bosses, err := p.readBossesLine(line, parsed.Boosted)
+			if err != nil {
+				return err
 			}
-
+			parsed.Bosses = bosses
 			break
 		}
 	}
 
 	p.store(parsed)
 	return nil
+}
+
+func (p *Parser) getLines(data string) ([]string, error) {
+	startIdx := strings.Index(
+		data, startIndexer,
+	)
+	if startIdx == -1 {
+		return nil, fmt.Errorf("boostable bosses: main content not found")
+	}
+
+	endIdx := strings.Index(
+		data[startIdx:], endIndexer,
+	) + startIdx
+	if endIdx == -1 {
+		return nil, fmt.Errorf("boostable bosses: end of content not found")
+	}
+
+	data = data[startIdx:endIdx]
+
+	lines := strings.Split(data, "\n")
+	if len(lines) == 0 {
+		return nil, fmt.Errorf("boostable bosses: no lines found")
+	}
+
+	return lines, nil
+}
+
+func (p *Parser) readTodaysLine(line string) (tibia.BoostableBoss, error) {
+	boss := tibia.BoostableBoss{
+		IsBoosted: true,
+	}
+
+	todayBossIdx := strings.Index(
+		line, todayBossIndexer,
+	) + len(todayBossIndexer)
+
+	if todayBossIdx == -1 {
+		return boss, fmt.Errorf("boostable bosses: today boss idx not found")
+	}
+
+	endTodayBossIdx := strings.Index(
+		line[todayBossIdx:], endTodayBossIndexer,
+	) + todayBossIdx
+
+	if endTodayBossIdx == -1 {
+		return boss, fmt.Errorf(
+			"boostable bosses: today boss end idx not found",
+		)
+	}
+
+	boss.Name = line[todayBossIdx:endTodayBossIdx]
+
+	todayBossImgIdx := strings.Index(
+		line[todayBossIdx:], todayBossImgIndexer,
+	) + todayBossIdx
+
+	if todayBossImgIdx == -1 {
+		return boss, fmt.Errorf(
+			"boostable bosses: today boss img idx not found",
+		)
+	}
+
+	endTodayBossImgIdx := strings.Index(
+		line[todayBossImgIdx:], endTodayBossImgIndexer,
+	) + todayBossImgIdx
+
+	if endTodayBossImgIdx == -1 {
+		return boss, fmt.Errorf(
+			"boostable bosses: today boss end img idx not found",
+		)
+	}
+
+	boss.ImageURL = line[todayBossImgIdx:endTodayBossImgIdx]
+	return boss, nil
+}
+
+func (p *Parser) readBossesLine(
+	line string,
+	boosted tibia.BoostableBoss,
+) ([]tibia.BoostableBoss, error) {
+	bosses := make([]tibia.BoostableBoss, 0, tibia.AmountOfBoostableBosses)
+
+	idx := strings.Index(line, bossesImgIndexer)
+	for ; idx != -1; idx = strings.Index(line, bossesImgIndexer) {
+		imgIdx := strings.Index(
+			line, bossesImgIndexer,
+		)
+
+		if imgIdx == -1 {
+			return nil, fmt.Errorf(
+				"boostable bosses: img idx not found",
+			)
+		}
+
+		endImgIdx := strings.Index(
+			line[imgIdx:], endBossesImgIndexer,
+		) + imgIdx
+
+		if endImgIdx == -1 {
+			return nil, fmt.Errorf(
+				"boostable bosses: end img idx not found",
+			)
+		}
+
+		img := line[imgIdx:endImgIdx]
+
+		nameIdx := strings.Index(
+			line, bossesNameIndexer,
+		) + len(bossesNameIndexer)
+
+		if nameIdx == -1 {
+			return nil, fmt.Errorf(
+				"boostable bosses: name idx not found",
+			)
+		}
+
+		endNameIdx := strings.Index(
+			line[nameIdx:], endBossesNameIndexer,
+		) + nameIdx
+
+		if endNameIdx == -1 {
+			return nil, fmt.Errorf(
+				"boostable bosses: end name idx not found",
+			)
+		}
+
+		name := line[nameIdx:endNameIdx]
+
+		bosses = append(bosses, tibia.BoostableBoss{
+			Name:      name,
+			ImageURL:  img,
+			IsBoosted: name == boosted.Name,
+		})
+
+		line = line[endNameIdx-1:]
+	}
+
+	return bosses, nil
 }
 
 func (p *Parser) load() tibia.BoostableBosses {
