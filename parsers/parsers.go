@@ -104,17 +104,11 @@ var (
 	// This feature allows the user to configure a custom base URL, so that,
 	// for example, a proxy can be used to access tibia.com, instead of calling
 	// it directly.
-	BaseURL = getBaseURL()
+	BaseURL = "https://www.tibia.com/"
 )
-
-var _baseURL = "https://www.tibia.com/"
 
 func init() {
 	if baseURL := os.Getenv("TIBIA_CRAWLER_BASE_URL"); baseURL != "" {
-		_baseURL = baseURL
+		BaseURL = baseURL
 	}
-}
-
-func getBaseURL() string {
-	return _baseURL
 }
