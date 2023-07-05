@@ -57,7 +57,7 @@ var (
 	// category was tried to be parsed.
 	ErrUnknownHighscoreCategory = errors.New("unknown highscore category")
 
-	// ErrUnknownWorldType will be used when an uknown world type was tried to
+	// ErrUnknownPvPType will be used when an uknown PvP type was tried to
 	// be parsed.
-	ErrUnknownWorldType = errors.New("unknown world type")
+	ErrUnknownPvPType = errors.New("unknown pvp type")
 )
