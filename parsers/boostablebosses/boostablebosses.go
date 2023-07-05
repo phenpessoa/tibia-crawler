@@ -46,11 +46,6 @@ var (
 	)
 )
 
-func init() {
-	tibiaServerSaveStartTime = tibiaServerSaveStartTime.UTC()
-	tibiaServerSaveEndTime = tibiaServerSaveEndTime.UTC()
-}
-
 var _ parsers.Parser[Args, tibia.BoostableBosses] = (*Parser)(nil)
 
 // Parser is an implementation of the Parser interface for
@@ -135,10 +130,6 @@ func (p *Parser) fetch(
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.URL(), nil)
 	if err != nil {
 		return fmt.Errorf("boostable bosses: failed to create req: %w", err)
-	}
-
-	if opts.RateLimiter != nil {
-		opts.RateLimiter.Take()
 	}
 
 	res, err := opts.HTTPClient.Do(req)
