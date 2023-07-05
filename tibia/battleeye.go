@@ -109,7 +109,7 @@ func (be BattleEyeStatus) ID() int {
 // Example usage:
 //
 //	be := tibia.BattleEyeStatusUnprotected
-//	var vals url.Values
+//	vals := url.Values{}
 //	vals.Set(be.QueryKey(), be.QueryVal())
 func (be BattleEyeStatus) QueryVal() string {
 	return strconv.FormatInt(int64(be.be), 10)
@@ -125,7 +125,7 @@ func (be BattleEyeStatus) QueryVal() string {
 // Example usage:
 //
 //	be := tibia.BattleEyeStatusUnprotected
-//	var vals url.Values
+//	vals := url.Values{}
 //	vals.Set(be.QueryKey(), be.QueryVal())
 func (be BattleEyeStatus) QueryKey() string {
 	return "beprotection"

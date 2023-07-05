@@ -174,7 +174,7 @@ func (v Vocation) QueryID() int {
 //
 //		v := tibia.VocationKnight
 //	 // VocationEliteKnight would have the same QueryVal
-//		var vals url.Values
+//		vals := url.Values{}
 //		vals.Set(v.QueryKey(), v.QueryVal())
 func (v Vocation) QueryVal() string {
 	return strconv.FormatInt(int64(v.QueryID()), 10)
@@ -190,7 +190,7 @@ func (v Vocation) QueryVal() string {
 //
 //		v := tibia.VocationKnight
 //	 // VocationEliteKnight would have the same QueryVal
-//		var vals url.Values
+//		vals := url.Values{}
 //		vals.Set(v.QueryKey(), v.QueryVal())
 func (v Vocation) QueryKey() string {
 	return "profession"

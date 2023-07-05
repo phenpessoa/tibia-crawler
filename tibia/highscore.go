@@ -187,7 +187,7 @@ func (hs HighscoreCategory) ID() int {
 // Example usage:
 //
 //	hs := tibia.HighscoreCategoryGoshnarsTaint
-//	var vals url.Values
+//	vals := url.Values{}
 //	vals.Set(hs.QueryKey(), hs.QueryVal())
 func (hs HighscoreCategory) QueryVal() string {
 	return strconv.FormatInt(int64(hs.ID()), 10)
@@ -203,7 +203,7 @@ func (hs HighscoreCategory) QueryVal() string {
 // Example usage:
 //
 //	hs := tibia.HighscoreCategoryCharmPoints
-//	var vals url.Values
+//	vals := url.Values{}
 //	vals.Set(hs.QueryKey(), hs.QueryVal())
 func (hs HighscoreCategory) QueryKey() string {
 	return "category"
