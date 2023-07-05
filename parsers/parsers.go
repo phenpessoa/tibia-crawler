@@ -6,6 +6,9 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"time"
+
+	"go.uber.org/ratelimit"
 )
 
 // Parser defines an interface for parsing content from a specific tibia.com
@@ -71,7 +74,24 @@ type Options struct {
 	// DisallowCachedResponses specifies whether the parser should disallow
 	// returning cached responses.
 	DisallowCachedResponses bool
+
+	// RateLimiter specifies a ratelimiter parsers MUST use before making a
+	// request to tibia.com.
+	//
+	// You can use the DefaultRateLimiter if your IP is not whitelisted by
+	// Cipsoft.
+	//
+	// If no RateLimiter is specified, parsers will not wait before making a
+	// request to tibia.com
+	RateLimiter ratelimit.Limiter
 }
+
+// DefaultRateLimiter is a ratelimiter that is known not to be restricted by
+// Cipsoft when making requests to tibia.com
+//
+// Users that are not behind a proxy should always pass this rate limiter
+// to parsers.
+var DefaultRateLimiter = ratelimit.New(1, ratelimit.Per(750*time.Millisecond))
 
 var (
 	// BaseURL is the base URL for accessing tibia.com.
