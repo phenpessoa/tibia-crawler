@@ -1,6 +1,8 @@
 package tibia
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -145,4 +147,50 @@ func (be BattleEyeStatus) String() string {
 	default:
 		panic("unknown be")
 	}
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (be *BattleEyeStatus) UnmarshalJSON(b []byte) error {
+	var zero any
+	if err := json.Unmarshal(b, &zero); err != nil {
+		return fmt.Errorf("failed to unmarshal battle eye: %w", err)
+	}
+
+	switch v := zero.(type) {
+	case string:
+		return be.unmarshalFromString(v)
+	case float64:
+		return be.unmarshalFromInt(int(v))
+	default:
+		return fmt.Errorf("can not unmarshal %T into battle eye", v)
+	}
+}
+
+func (be *BattleEyeStatus) unmarshalFromString(data string) error {
+	if data == "" {
+		return nil
+	}
+
+	_be, err := BattleEyeStatusFromString(data)
+	if err != nil {
+		return fmt.Errorf("battle eye unmarshal: %w", err)
+	}
+
+	*be = _be
+	return nil
+}
+
+func (be *BattleEyeStatus) unmarshalFromInt(data int) error {
+	_be, err := BattleEyeStatusFromInt(data)
+	if err != nil {
+		return fmt.Errorf("battle eye unmarshal: %w", err)
+	}
+
+	*be = _be
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (be BattleEyeStatus) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + be.String() + `"`), nil
 }

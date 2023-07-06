@@ -1,6 +1,8 @@
 package tibia
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -220,6 +222,52 @@ func (v Vocation) String() string {
 	case VocationElderDruid:
 		return "Elder Druid"
 	default:
-		return ""
+		panic("unknown vocation")
 	}
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (v *Vocation) UnmarshalJSON(b []byte) error {
+	var zero any
+	if err := json.Unmarshal(b, &zero); err != nil {
+		return fmt.Errorf("failed to unmarshal vocation: %w", err)
+	}
+
+	switch vt := zero.(type) {
+	case string:
+		return v.unmarshalFromString(vt)
+	case float64:
+		return v.unmarshalFromInt(int(vt))
+	default:
+		return fmt.Errorf("can not unmarshal %T into vocation", vt)
+	}
+}
+
+func (v *Vocation) unmarshalFromString(data string) error {
+	if data == "" {
+		return nil
+	}
+
+	_v, err := VocationFromString(data)
+	if err != nil {
+		return fmt.Errorf("vocation unmarshal: %w", err)
+	}
+
+	*v = _v
+	return nil
+}
+
+func (v *Vocation) unmarshalFromInt(data int) error {
+	_v, err := VocationFromInt(data)
+	if err != nil {
+		return fmt.Errorf("vocation unmarshal: %w", err)
+	}
+
+	*v = _v
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (v Vocation) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + v.String() + `"`), nil
 }
