@@ -1,6 +1,8 @@
 package tibia
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -150,4 +152,50 @@ func (pt PvPType) String() string {
 	default:
 		panic("unknown wt")
 	}
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (pt *PvPType) UnmarshalJSON(b []byte) error {
+	var zero any
+	if err := json.Unmarshal(b, &zero); err != nil {
+		return fmt.Errorf("failed to unmarshal pvp type: %w", err)
+	}
+
+	switch v := zero.(type) {
+	case string:
+		return pt.unmarshalFromString(v)
+	case float64:
+		return pt.unmarshalFromInt(int(v))
+	default:
+		return fmt.Errorf("can not unmarshal %T into pvp type", v)
+	}
+}
+
+func (pt *PvPType) unmarshalFromString(data string) error {
+	if data == "" {
+		return nil
+	}
+
+	_pt, err := PvPTypeFromString(data)
+	if err != nil {
+		return fmt.Errorf("pvp type unmarshal: %w", err)
+	}
+
+	*pt = _pt
+	return nil
+}
+
+func (pt *PvPType) unmarshalFromInt(data int) error {
+	_pt, err := PvPTypeFromInt(data)
+	if err != nil {
+		return fmt.Errorf("pvp type unmarshal: %w", err)
+	}
+
+	*pt = _pt
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (pt PvPType) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + pt.String() + `"`), nil
 }

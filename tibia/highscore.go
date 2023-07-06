@@ -1,6 +1,8 @@
 package tibia
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -22,40 +24,40 @@ import (
 // Achievements) will also be parsed into their corresponding HighscoreCategory.
 func HighscoreCategoryFromString(category string) (HighscoreCategory, error) {
 	switch strings.ToLower(category) {
-	case "achievement", "achievements":
+	case "achievement", "achievements", "1":
 		return HighscoreCategoryAchievements, nil
-	case "axe", "axe fighting", "axefighting":
+	case "axe", "axe fighting", "axefighting", "2":
 		return HighscoreCategoryAxeFighting, nil
-	case "charm points", "charm", "charmpoints":
+	case "charm points", "charm", "charmpoints", "3":
 		return HighscoreCategoryCharmPoints, nil
-	case "club fighting", "club", "clubfighting":
+	case "club fighting", "club", "clubfighting", "4":
 		return HighscoreCategoryClubFighting, nil
-	case "distance fighting", "distance", "distancefighting":
+	case "distance fighting", "distance", "distancefighting", "5":
 		return HighscoreCategoryDistanceFighting, nil
 	case "experience points", "exp", "xp", "experience", "experiencepoints",
-		"level":
+		"level", "6":
 		return HighscoreCategoryExperiencePoints, nil
-	case "fishing":
+	case "fishing", "7":
 		return HighscoreCategoryFishing, nil
-	case "fist fighting", "fist", "fistfighting":
+	case "fist fighting", "fist", "fistfighting", "8":
 		return HighscoreCategoryFistFighting, nil
 	case "goshnars taint", "taint", "goshnar's taint", "goshnars",
-		"goshnarstaint":
+		"goshnarstaint", "9":
 		return HighscoreCategoryGoshnarsTaint, nil
-	case "loyalty points", "loyalty", "loyaltypoints":
+	case "loyalty points", "loyalty", "loyaltypoints", "10":
 		return HighscoreCategoryLoyaltyPoints, nil
-	case "magic level", "magic", "ml", "magiclevel":
+	case "magic level", "magic", "ml", "magiclevel", "11":
 		return HighscoreCategoryMagicLevel, nil
-	case "shielding":
+	case "shielding", "12":
 		return HighscoreCategoryShielding, nil
-	case "sword fighting", "sword", "swordfighting":
+	case "sword fighting", "sword", "swordfighting", "13":
 		return HighscoreCategorySwordFighting, nil
-	case "drome score", "drome", "dromescore":
+	case "drome score", "drome", "dromescore", "14":
 		return HighscoreCategoryDromeScore, nil
-	case "boss points", "bosspoints":
+	case "boss points", "bosspoints", "15":
 		return HighscoreCategoryBossPoints, nil
 	default:
-		return HighscoreCategoryDefault, ErrUnknownHighscoreCategory
+		return HighscoreCategory{}, ErrUnknownHighscoreCategory
 	}
 }
 
@@ -104,7 +106,7 @@ func HighscoreCategoryFromInt(category int) (HighscoreCategory, error) {
 	case 15:
 		return HighscoreCategoryBossPoints, nil
 	default:
-		return HighscoreCategoryDefault, ErrUnknownHighscoreCategory
+		return HighscoreCategory{}, ErrUnknownHighscoreCategory
 	}
 }
 
@@ -231,7 +233,7 @@ func (hs HighscoreCategory) String() string {
 	case HighscoreCategoryFistFighting:
 		return "Fist Fighting"
 	case HighscoreCategoryGoshnarsTaint:
-		return "Goshnar's taint"
+		return "Goshnar's Taint"
 	case HighscoreCategoryLoyaltyPoints:
 		return "Loyalty Points"
 	case HighscoreCategoryMagicLevel:
@@ -247,4 +249,50 @@ func (hs HighscoreCategory) String() string {
 	default:
 		panic("unknown hs")
 	}
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (hs *HighscoreCategory) UnmarshalJSON(b []byte) error {
+	var zero any
+	if err := json.Unmarshal(b, &zero); err != nil {
+		return fmt.Errorf("failed to unmarshal high score category: %w", err)
+	}
+
+	switch v := zero.(type) {
+	case string:
+		return hs.unmarshalFromString(v)
+	case float64:
+		return hs.unmarshalFromInt(int(v))
+	default:
+		return fmt.Errorf("can not unmarshal %T into highscore category", v)
+	}
+}
+
+func (hs *HighscoreCategory) unmarshalFromString(data string) error {
+	if data == "" {
+		return nil
+	}
+
+	_hs, err := HighscoreCategoryFromString(data)
+	if err != nil {
+		return fmt.Errorf("highscore category unmarshal: %w", err)
+	}
+
+	*hs = _hs
+	return nil
+}
+
+func (hs *HighscoreCategory) unmarshalFromInt(data int) error {
+	_hs, err := HighscoreCategoryFromInt(data)
+	if err != nil {
+		return fmt.Errorf("highscore category unmarshal: %w", err)
+	}
+
+	*hs = _hs
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (hs HighscoreCategory) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + hs.String() + `"`), nil
 }
